@@ -1,0 +1,37 @@
+def sliceDir = rootProject.file('slice')
+def generatedDir = layout.buildDirectory.dir('generated-src/slice').get().asFile
+
+def buscarSlice2java = {
+    def home = project.findProperty('iceHome') ?: System.getenv('ICE_HOME')
+    def candidatos = []
+    if (home) {
+        candidatos << new File(home, 'bin/slice2java.exe') << new File(home, 'bin/slice2java')
+    }
+    candidatos << new File('C:/Program Files/ZeroC/Ice-3.7.10/bin/slice2java.exe')
+    def encontrado = candidatos.find { it.exists() }
+    return encontrado ? encontrado.absolutePath : 'slice2java'
+}
+
+tasks.register('compileSlice', Exec) {
+    group = 'build'
+    description = 'Genera las clases Java a partir de los contratos Slice.'
+    def archivos = fileTree(sliceDir).matching { include '**/*.ice' }.files.collect { it.absolutePath }.sort()
+    inputs.files(archivos)
+    outputs.dir(generatedDir)
+    commandLine([buscarSlice2java(), '--output-dir', generatedDir.absolutePath] + archivos)
+    doFirst {
+        generatedDir.mkdirs()
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir generatedDir
+        }
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn 'compileSlice'
+}

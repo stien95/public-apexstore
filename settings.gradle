@@ -1,0 +1,3 @@
+rootProject.name = 'apexstore'
+
+include 'contratos', 'persistencia', 'pagos', 'backend', 'cliente'

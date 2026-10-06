@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: apexstore-postgres
+    environment:
+      POSTGRES_DB: apexstore_tx
+      POSTGRES_USER: apex
+      POSTGRES_PASSWORD: apex
+    ports:
+      - "55432:5432"
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U apex -d apexstore_tx"]
+      interval: 5s
+      timeout: 3s
+      retries: 10

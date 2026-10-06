@@ -1,0 +1,59 @@
+ext {
+    iceVersion = '3.7.10'
+}
+
+subprojects {
+    apply plugin: 'java'
+
+    repositories {
+        mavenCentral()
+    }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+
+    dependencies {
+        implementation "com.zeroc:ice:${rootProject.iceVersion}"
+    }
+}
+
+configure(subprojects.findAll { it.name != 'contratos' }) {
+    apply plugin: 'application'
+
+    dependencies {
+        implementation project(':contratos')
+    }
+
+    tasks.named('run') {
+        workingDir = rootProject.projectDir
+        standardInput = System.in
+    }
+
+    tasks.register('fatJar', Jar) {
+        group = 'build'
+        description = 'Empaqueta el nodo como un jar ejecutable con todas sus dependencias.'
+        archiveFileName = "${project.name}.jar"
+        destinationDirectory = rootProject.layout.buildDirectory.dir('dist')
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        doFirst {
+            manifest.attributes('Main-Class': application.mainClass.get())
+        }
+        from sourceSets.main.output
+        dependsOn configurations.runtimeClasspath
+        from {
+            configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        }
+        exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+    }
+
+    tasks.named('assemble') {
+        dependsOn 'fatJar'
+    }
+}
